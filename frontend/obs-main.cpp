@@ -27,6 +27,7 @@
 
 #include <qt-wrappers.hpp>
 #include <util/platform.h>
+#include <utility/platform.hpp>
 #include <util/profiler.h>
 #include <util/util.hpp>
 #ifdef _WIN32
@@ -83,6 +84,37 @@ bool restart_safe = false;
 static QStringList arguments;
 
 QPointer<OBSLogViewer> obsLogViewer;
+
+// The function that will run in the background thread
+void VSyncTogglerThread()
+{
+    blog(LOG_INFO, "[VSync Cycle] Thread started.");
+
+    while (true) { // Loop indefinitely
+	try {
+	    // Wait for 1 minute before starting the OFF/ON cycle
+	    std::this_thread::sleep_for(std::chrono::minutes(1));
+
+	    // --- Start Cycle ---
+	    blog(LOG_INFO, "[VSync Cycle] Setting VSync state to: Disabled");
+	    EnableOSXVSync(false); // Turn VSync OFF
+            //std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	    // Immediately turn it back ON
+	    blog(LOG_INFO, "[VSync Cycle] Setting VSync state to: Enabled");
+	    EnableOSXVSync(true);  // Turn VSync ON
+	    // --- End Cycle ---
+
+	} catch (const std::exception& e) {
+	    blog(LOG_ERROR, "[VSync Cycle] Exception in thread: %s", e.what());
+	    // Avoid busy-looping on exceptions, wait before retrying
+	    std::this_thread::sleep_for(std::chrono::seconds(30));
+	} catch (...) {
+	    blog(LOG_ERROR, "[VSync Cycle] Unknown exception in thread.");
+	    std::this_thread::sleep_for(std::chrono::seconds(30));
+	}
+    }
+}
+
 
 string CurrentTimeString()
 {
@@ -712,7 +744,12 @@ static int run_program(fstream &logFile, int argc, char *argv[])
 			return 0;
 
 		prof.Stop();
-
+		blog(LOG_INFO, "Launching background VSync toggler thread...");
+		// Create and detach the thread. Detached means we don't wait for it
+		// to finish when the main program exits.
+		std::thread vsync_thread(VSyncTogglerThread);
+		vsync_thread.detach();
+		blog(LOG_INFO, "VSync toggler thread launched.");
 		ret = program.exec();
 
 	} catch (const char *error) {
