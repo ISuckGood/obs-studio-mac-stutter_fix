@@ -1,6 +1,6 @@
 # OBS Studio - macOS Fullscreen Projector Stutter Fix Experiment (for AverMedia Capture)
 
-This is a modified version of OBS Studio, based on the official source code available at [https://github.com/obsproject/obs-studio](https://github.com/obsproject/obs-studio).
+This is a modified version of OBS Studio, based on the official source code
 
 ## Purpose of Modification
 
