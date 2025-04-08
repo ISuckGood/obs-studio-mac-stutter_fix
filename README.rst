@@ -1,72 +1,33 @@
-OBS Studio <https://obsproject.com>
-===================================
+# OBS Studio - macOS Fullscreen Projector Stutter Fix Experiment (for AverMedia Capture)
 
-.. image:: https://github.com/obsproject/obs-studio/actions/workflows/push.yaml/badge.svg?branch=master
-   :alt: OBS Studio Build Status - GitHub Actions
-   :target: https://github.com/obsproject/obs-studio/actions/workflows/push.yaml?query=branch%3Amaster
+This is a modified version of OBS Studio, based on the official source code available at [https://github.com/obsproject/obs-studio](https://github.com/obsproject/obs-studio).
 
-.. image:: https://badges.crowdin.net/obs-studio/localized.svg
-   :alt: OBS Studio Translation Project Progress
-   :target: https://crowdin.com/project/obs-studio
+## Purpose of Modification
 
-.. image:: https://img.shields.io/discord/348973006581923840.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2
-   :alt: OBS Studio Discord Server
-   :target: https://obsproject.com/discord
+The changes in this repository were made specifically to try and resolve a **stuttering issue** observed under the following conditions on a **MacBook Pro**:
 
-What is OBS Studio?
--------------------
+1.  Using OBS Studio's **Fullscreen Projector** output on one display.
+2.  Simultaneously capturing video from an external **USB AverMedia capture card**.
 
-OBS Studio is software designed for capturing, compositing, encoding,
-recording, and streaming video content, efficiently.
+Under these specific circumstances, the fullscreen projector output would exhibit significant stutter or lag, which was not resolved by the standard "Disable macOS V-Sync" option in OBS settings.
 
-It's distributed under the GNU General Public License v2 (or any later
-version) - see the accompanying COPYING file for more details.
+## Changes Implemented
 
-Quick Links
------------
+The core modification involves adding a background thread within `main.cpp` (specifically targeting macOS builds). This thread performs the following actions approximately every minute:
 
-- Website: https://obsproject.com
+* Calls the internal `EnableOSXVSync(false)` function (which uses private macOS APIs `CGSSetDebugOptions` and `CGSDeferredUpdates`).
+* Immediately calls `EnableOSXVSync(true)`.
 
-- Help/Documentation/Guides: https://github.com/obsproject/obs-studio/wiki
+The goal was to see if periodically cycling the V-Sync state via these low-level functions could mitigate the stuttering experienced in the described scenario.
 
-- Forums: https://obsproject.com/forum/
+## Disclaimer
 
-- Build Instructions: https://github.com/obsproject/obs-studio/wiki/Install-Instructions
+* **Experimental:** This is a personal experiment, not an official fix.
+* **Private APIs:** Relies on undocumented macOS functions that could change or break in future OS updates.
+* **macOS Only:** These changes are specific to macOS.
+* **Effectiveness:** [**Important:** You should state here whether this modification *actually solved* the stuttering problem for you, partially helped, or had no effect.]
+* **Use At Your Own Risk:** This modification might introduce other instabilities.
 
-- Developer/API Documentation: https://obsproject.com/docs
+## Building
 
-- Donating/backing/sponsoring: https://obsproject.com/contribute
-
-- Bug Tracker: https://github.com/obsproject/obs-studio/issues
-
-Contributing
-------------
-
-- If you would like to help fund or sponsor the project, you can do so
-  via `Patreon <https://www.patreon.com/obsproject>`_, `OpenCollective
-  <https://opencollective.com/obsproject>`_, or `PayPal
-  <https://www.paypal.me/obsproject>`_.  See our `contribute page
-  <https://obsproject.com/contribute>`_ for more information.
-
-- If you wish to contribute code to the project, please make sure to
-  read the coding and commit guidelines:
-  https://github.com/obsproject/obs-studio/blob/master/CONTRIBUTING.rst
-
-- Developer/API documentation can be found here:
-  https://obsproject.com/docs
-
-- If you wish to contribute translations, do not submit pull requests.
-  Instead, please use Crowdin.  For more information read this page:
-  https://obsproject.com/wiki/How-To-Contribute-Translations-For-OBS
-
-- Other ways to contribute are by helping people out with support on
-  our forums or in our community chat.  Please limit support to topics
-  you fully understand -- bad advice is worse than no advice.  When it
-  comes to something that you don't fully know or understand, please
-  defer to the official help or official channels.
-
-
-SAST Tools
-----------
-
-`PVS-Studio <https://pvs-studio.com/pvs-studio/?utm_source=website&utm_medium=github&utm_campaign=open_source>`_ - static analyzer for C, C++, C#, and Java code.
+Build this modified version following the standard OBS Studio build procedures for macOS.
